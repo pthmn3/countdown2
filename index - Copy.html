@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Countdown Timer</title>
+    <!-- 1. Load Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 2. Load the "Inter" font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    
+    <style>
+        /* 3. Set the base font for the entire page */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* NEW: Animated Gradient Background */
+        @keyframes moveGradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* 4. Custom class for the "glassmorphism" effect */
+        .glass-box {
+            background: rgba(255, 255, 255, 0.07);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            /* NEW: Added a subtle cyan glow to the box-shadow */
+            box-shadow: 0 4px 12px 0 rgba(0, 0, 0, 0.15), 0 0 15px 0 rgba(34, 211, 238, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100px; 
+        }
+
+        /* NEW: Wrapper for each timer unit to apply perspective and tilt */
+        .timer-unit-wrapper {
+            perspective: 500px; 
+            /* NEW: Added transition for smooth mouse-move tilt */
+            transition: transform 0.1s ease-out;
+        }
+
+        /* NEW: Gradient Text for numbers */
+        .timer-number {
+            display: inline-block;
+            /* Create the gradient */
+            background-image: linear-gradient(45deg, #22d3ee, #818cf8);
+            /* Clip the background to the text */
+            -webkit-background-clip: text;
+            background-clip: text;
+            /* Make the text color transparent to show the gradient */
+            color: transparent;
+            /* NEW: Add a text-shadow glow */
+            text-shadow: 0 0 12px rgba(34, 211, 238, 0.4);
+        }
+
+        /* 5. Animation for the number/box flip */
+        @keyframes flipIn {
+            from {
+                transform: rotateX(0.25turn) scale(0.9);
+                opacity: 0.2;
+            }
+            to {
+                transform: rotateX(0) scale(1);
+                opacity: 1;
+            }
+        }
+
+        .update-anim {
+            animation: flipIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+    </style>
+</head>
+<!-- REPLACED: Body now has the animated gradient style -->
+<body class="text-white h-screen w-screen flex items-center justify-center overflow-hidden"
+      style="background: linear-gradient(-45deg, #0f172a, #000000, #082f49, #0f172a); background-size: 400% 400%; animation: moveGradient 15s ease infinite;">
+
+    <!-- Main container to center all content -->
+    <div class="flex flex-col items-center p-4">
+        
+        <!-- Title (Made responsive) -->
+        <h1 class="text-3xl sm:text-4xl md:text-5xl font-bold uppercase tracking-widest mb-10 text-center">
+            A/L Exam Countdown
+        </h1>
+
+        <!-- Countdown blocks container -->
+        <div id="countdown-container" class="flex flex-wrap justify-center gap-4 md:gap-8">
+            
+            <!-- Days Block (Made responsive) -->
+            <div class="timer-unit-wrapper flex flex-col items-center">
+                <div id="days-box" class="glass-box rounded-2xl p-4 sm:p-6 md:p-8 w-28 sm:w-32 shadow-lg">
+                    <span id="days" class="timer-number text-5xl sm:text-6xl md:text-7xl font-black">00</span>
+                </div>
+                <span class="text-sm uppercase tracking-widest text-gray-300 mt-4">Days</span>
+            </div>
+            
+            <!-- Hours Block (Made responsive) -->
+            <div class="timer-unit-wrapper flex flex-col items-center">
+                <div id="hours-box" class="glass-box rounded-2xl p-4 sm:p-6 md:p-8 w-28 sm:w-32 shadow-lg">
+                    <span id="hours" class="timer-number text-5xl sm:text-6xl md:text-7xl font-black">00</span>
+                </div>
+                <span class="text-sm uppercase tracking-widest text-gray-300 mt-4">Hours</span>
+            </div>
+            
+            <!-- Minutes Block (Made responsive) -->
+            <div class="timer-unit-wrapper flex flex-col items-center">
+                <div id="minutes-box" class="glass-box rounded-2xl p-4 sm:p-6 md:p-8 w-28 sm:w-32 shadow-lg">
+                    <span id="minutes" class="timer-number text-5xl sm:text-6xl md:text-7xl font-black">00</span>
+                </div>
+                <span class="text-sm uppercase tracking-widest text-gray-300 mt-4">Minutes</span>
+            </div>
+            
+            <!-- Seconds Block (Made responsive) -->
+            <div class="timer-unit-wrapper flex flex-col items-center">
+                <div id="seconds-box" class="glass-box rounded-2xl p-4 sm:p-6 md:p-8 w-28 sm:w-32 shadow-lg">
+                    <span id="seconds" class="timer-number text-5xl sm:text-6xl md:text-7xl font-black">00</span>
+                </div>
+                <span class="text-sm uppercase tracking-widest text-gray-300 mt-4">Seconds</span>
+            </div>
+
+        </div>
+
+        <!-- This message will appear when the countdown finishes -->
+        <div id="expired-message" class="hidden mt-10 text-4xl font-bold text-cyan-300 text-center">
+            The time has come!
+        </div>
+    </div>
+
+    <script>
+        // --- COUNTDOWN LOGIC ---
+
+        // 5. SET THE TARGET DATE:
+        const currentYear = new Date().getFullYear();
+        let targetDate = new Date(`November 12, ${currentYear} 00:00:00`);
+
+        if (new Date() > targetDate) {
+            targetDate = new Date(`November 12, ${currentYear + 1} 00:00:00`);
+        }
+        
+        const targetTime = targetDate.getTime();
+
+        // 6. Get references to the HTML elements
+        const daysEl = document.getElementById('days');
+        const hoursEl = document.getElementById('hours');
+        const minutesEl = document.getElementById('minutes');
+        const secondsEl = document.getElementById('seconds');
+        
+        const daysBoxEl = document.getElementById('days-box');
+        const hoursBoxEl = document.getElementById('hours-box');
+        const minutesBoxEl = document.getElementById('minutes-box');
+        const secondsBoxEl = document.getElementById('seconds-box');
+
+        const countdownContainer = document.getElementById('countdown-container');
+        const expiredMessage = document.getElementById('expired-message');
+
+        function formatTime(time) {
+            return String(time).padStart(2, '0');
+        }
+
+        function updateElement(numberEl, boxEl, value) {
+            const formattedValue = formatTime(value);
+            if (numberEl.innerHTML !== formattedValue) {
+                numberEl.innerHTML = formattedValue;
+                boxEl.classList.remove('update-anim');
+                void boxEl.offsetWidth; 
+                boxEl.classList.add('update-anim');
+            }
+        }
+
+        function updateCountdown() {
+            const now = new Date().getTime();
+            const distance = targetTime - now;
+
+            if (distance < 0) {
+                clearInterval(countdownInterval); 
+                countdownContainer.classList.add('hidden'); 
+                expiredMessage.classList.remove('hidden'); 
+                return;
+            }
+
+            const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+            updateElement(daysEl, daysBoxEl, days);
+            updateElement(hoursEl, hoursBoxEl, hours);
+            updateElement(minutesEl, minutesBoxEl, minutes);
+            updateElement(secondsEl, secondsBoxEl, seconds);
+        }
+
+        updateCountdown();
+        const countdownInterval = setInterval(updateCountdown, 1000);
+
+        
+        // --- NEW: Interactive 3D Tilt Effect ---
+        
+        // Get all the timer unit wrappers
+        const tiltElements = document.querySelectorAll('.timer-unit-wrapper');
+
+        // Listen for mouse movement on the whole document
+        document.addEventListener('mousemove', (e) => {
+            const { clientX, clientY } = e;
+            const x = (clientX / window.innerWidth) - 0.5; // -0.5 to 0.5
+            const y = (clientY / window.innerHeight) - 0.5; // -0.5 to 0.5
+
+            const maxTilt = 10; // max 10 degrees
+            const rotY = x * maxTilt;
+            const rotX = -y * maxTilt; // Invert y for natural mouse movement
+
+            // Apply the tilt to each element
+            tiltElements.forEach(el => {
+                el.style.transform = `rotateY(${rotY}deg) rotateX(${rotX}deg)`;
+            });
+        });
+
+        // Reset the tilt when the mouse leaves the window
+        document.body.addEventListener('mouseleave', () => {
+            tiltElements.forEach(el => {
+                el.style.transform = 'rotateY(0deg) rotateX(0deg)';
+            });
+        });
+
+    </script>
+</body>
+</html>
+
